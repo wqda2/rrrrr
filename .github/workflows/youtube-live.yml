@@ -1,0 +1,67 @@
+name: 24/7 YouTube Live Stream
+
+on:
+  schedule:
+    # প্রতি 5 ঘন্টায় একবার run হবে (overlap এড়াতে)
+    - cron: '0 */5 * * *'
+    - cron: '30 */5 * * *'  # Extra backup schedule
+  
+  workflow_dispatch:  # Manual start করার option
+  
+  push:
+    branches: [ main ]
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330  # 5.5 ঘন্টা timeout
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+      
+      - name: 🐍 Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: 📦 Install FFmpeg
+        run: |
+          echo "📦 Installing FFmpeg..."
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          echo "✅ FFmpeg installed!"
+          ffmpeg -version | head -n 1
+      
+      - name: 📚 Install Python Dependencies
+        run: |
+          echo "📚 Installing Python packages..."
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✅ Dependencies installed!"
+      
+      - name: 🎬 Start YouTube Live Stream
+        env:
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          VIDEO_URL: ${{ secrets.VIDEO_URL }}
+          VIDEO_QUALITY: ${{ secrets.VIDEO_QUALITY }}
+        run: |
+          echo "=================================="
+          echo "🎬 Starting 24/7 YouTube Live Stream"
+          echo "=================================="
+          echo "⏰ Started at: $(date)"
+          echo "🌍 Running on: GitHub Actions"
+          echo "💻 PC Status: Can be OFF!"
+          echo "=================================="
+          python streamer.py
+      
+      - name: 📊 Stream Summary
+        if: always()
+        run: |
+          echo "=================================="
+          echo "📊 Stream Session Summary"
+          echo "=================================="
+          echo "⏰ Ended at: $(date)"
+          echo "🔄 Next run: Automatic (in ~30 min)"
+          echo "✅ Status: Completed"
+          echo "=================================="
